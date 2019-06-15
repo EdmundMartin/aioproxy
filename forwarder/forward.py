@@ -5,7 +5,6 @@ from aiohttp import web
 
 
 async def _extract_bodies(request: web.Request) -> Tuple[Optional[Dict], Optional[Dict]]:
-    result = {}
     methods = [(request.json, 'json'), (request.post, 'data')]
     for m in methods:
         try:
@@ -14,14 +13,16 @@ async def _extract_bodies(request: web.Request) -> Tuple[Optional[Dict], Optiona
         except Exception:
             continue
         else:
-            result[res_type] = res
-            return result.get('json', None), result.get('data', None)
+            if res_type == 'json':
+                return res, None
+            return None, res
     return None, None
 
 
 async def extract_payloads(request: web.Request) -> Tuple[Optional[Dict], Optional[Dict]]:
     if request.method in ['PUT', 'PATCH', 'POST'] and request.can_read_body:
         return await _extract_bodies(request)
+    return None, None
 
 
 class Forwarder:
