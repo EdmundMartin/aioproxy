@@ -4,7 +4,7 @@ import os
 from aiohttp import web
 from tortoise import Tortoise
 
-from proxy_server.proxy_routes import server_proxy, round_robin
+from proxy_server.proxy_routes import server_proxy, round_robin, round_robin_minimum_reliability
 from proxy_server.management_routes import management_router
 from proxy_manager.manger import ProxyManager
 
@@ -14,6 +14,7 @@ class ProxyServer:
     PROXY_STRATEGIES = {
         'round_robin': round_robin,
         'server_proxy': server_proxy,
+        'round_robin_reliability': round_robin_minimum_reliability
     }
 
     def __init__(self, host: str, port: int, loop=None):
@@ -29,7 +30,8 @@ class ProxyServer:
         )
         await Tortoise.generate_schemas()
         app['manager'] = ProxyManager()
-        app.router.add_route('*', '/', self.PROXY_STRATEGIES.get(os.getenv('PROXY_STRATEGY', 'round_robin')))
+        app.router.add_route('*', '/', self.PROXY_STRATEGIES.get(os.getenv('PROXY_STRATEGY',
+                                                                           'round_robin_reliability')))
         app.add_routes(management_router)
         return app
 

@@ -12,7 +12,7 @@ def _update_state(status_code: int, state: Dict) -> None:
     elif status_code >= 400:
         state['status_4xx'] += 1
         return
-    else:
+    elif status_code >= 200:
         state['status_2xx'] += 1
 
 

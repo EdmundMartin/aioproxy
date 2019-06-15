@@ -1,6 +1,7 @@
 from typing import Optional
 
 from aiohttp import web
+from aiohttp.client_exceptions import ClientError
 
 from forwarder.forward import Forwarder, extract_payloads
 from forwarder.timer import RequestTimer
@@ -25,6 +26,27 @@ async def server_proxy(request: web.Request):
 async def round_robin(request: web.Request):
     with RequestTimer() as t:
         proxy_id, proxy = await request.app['manager'].round_robin()
-        resp = await forward_request(request, proxy)
-    await update_request_metrics(proxy_id, resp.status, t.latency)
+        try:
+            resp = await forward_request(request, proxy)
+        except ClientError:
+            status = 100
+            resp = web.json_response({'error': 'unable to make request'}, status=500)
+        else:
+            status = resp.status
+    await update_request_metrics(proxy_id, status, t.latency)
+    return resp
+
+
+async def round_robin_minimum_reliability(request: web.Request):
+    with RequestTimer() as t:
+        print('LOL')
+        proxy_id, proxy = await request.app['manager'].round_robin_reliability()
+        try:
+            resp = await forward_request(request, proxy)
+        except ClientError:
+            status = 100
+            resp = web.json_response({'error': 'unable to make request'}, status=500)
+        else:
+            status = resp.status
+    await update_request_metrics(proxy_id, status, t.latency)
     return resp
